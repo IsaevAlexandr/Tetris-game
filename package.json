@@ -1,0 +1,14 @@
+{
+  "name": "tetris-game",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "keywords": [],
+  "author": "IsaevAlexandr",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^3.7.4"
+  }
+}
