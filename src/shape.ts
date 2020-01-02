@@ -23,16 +23,6 @@ export class Shape {
     switchShape() {
         this.activeShapeNumber = this.getNextShapeNumber();
     }
-
-    forEachNonEmptyCell(cb: (args: { x: number; y: number }) => void) {
-        for (let y = 0; y < this.activeShape.length; y++) {
-            for (let x = 0; x < this.activeShape[y].length; x++) {
-                if (this.activeShape[y][x]) {
-                    cb({ x, y });
-                }
-            }
-        }
-    }
 }
 
 // https://tetris.fandom.com/wiki/Tetromino

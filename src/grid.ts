@@ -3,13 +3,17 @@ import { DrawContext } from './drawContext';
 export class Grid {
     table: string[][];
 
-    constructor(private readonly ctx: DrawContext) {
+    constructor(
+        private readonly ctx: DrawContext,
+        readonly colSize: number,
+        readonly rowSize: number,
+    ) {
         this.generateTable();
     }
 
     private generateTable() {
         this.table = [];
-        for (let y = 0; y < this.ctx.rowSize; y++) {
+        for (let y = 0; y < this.rowSize; y++) {
             this.table[y] = [];
 
             this.addEmptyLine(y);
@@ -17,14 +21,14 @@ export class Grid {
     }
 
     private addEmptyLine(y: number) {
-        for (let x = 0; x < this.ctx.colSize; x++) {
+        for (let x = 0; x < this.colSize; x++) {
             this.setCellColor(x, y, this.ctx.emptyFieldColor);
         }
     }
 
     private shiftLinesTo(yPosition: number) {
         for (let y = yPosition; y > 1; y--) {
-            for (let x = 0; x < this.ctx.colSize; x++) {
+            for (let x = 0; x < this.colSize; x++) {
                 this.table[y][x] = this.table[y - 1][x];
             }
         }
@@ -38,19 +42,24 @@ export class Grid {
         }
     }
 
-    removeFulfilledLines() {
+    removeFulfilledLines(): number {
+        let removedLinesCount = 0;
+
         for (let y = 0; y < this.table.length; y++) {
             let hasNoEmptyCell = true;
 
-            for (let x = 0; x < this.ctx.colSize; x++) {
+            for (let x = 0; x < this.colSize; x++) {
                 hasNoEmptyCell = hasNoEmptyCell && this.table[y][x] !== this.ctx.emptyFieldColor;
             }
 
             if (hasNoEmptyCell) {
                 this.shiftLinesTo(y);
                 this.addEmptyLine(0);
+                removedLinesCount++;
             }
         }
+
+        return removedLinesCount;
     }
 
     checkCollision(nextOfsetX: number, nextOffsetY: number, matrix: number[][]) {
@@ -67,7 +76,7 @@ export class Grid {
                     continue;
                 }
 
-                if (offsetX < 0 || offsetX >= this.ctx.colSize || offsetY >= this.ctx.rowSize) {
+                if (offsetX < 0 || offsetX >= this.colSize || offsetY >= this.rowSize) {
                     return true;
                 }
 

@@ -1,26 +1,28 @@
 import { Shape } from './shape';
 import { Grid } from './grid';
 import { DrawContext } from './drawContext';
+import { ScoreObserver } from './scoreObserver';
 
 export class Game {
-    shape: Shape;
-    grid: Grid;
     shapeOffsetX: number;
     shapeOffsetY: number;
-    isGameOver: boolean;
-    tikTime: number;
 
-    constructor(private readonly ctx: DrawContext) {
-        this.shape = new Shape();
-        this.grid = new Grid(ctx);
-
-        this.isGameOver = false;
-        this.tikTime = 1000;
-        this.shapeOffsetX = Math.ceil(this.ctx.colSize / 2) - 2;
-        this.shapeOffsetY = -3;
+    constructor(
+        private readonly ctx: DrawContext,
+        private readonly grid: Grid = new Grid(ctx, 10, 15),
+        private shape: Shape = new Shape(),
+        private isGameOver: boolean = false,
+        private tikTime: number = 1000,
+        readonly score: ScoreObserver = new ScoreObserver(),
+    ) {
+        this.setinitialShapeOffsets();
     }
 
-    start() {
+    private setinitialShapeOffsets() {
+        [this.shapeOffsetX, this.shapeOffsetY] = [Math.ceil(this.grid.colSize / 2) - 2, -3];
+    }
+
+    start = () => {
         document.addEventListener('keydown', this.handleKeypres);
         this.startGame();
         this.drawGrid();
@@ -38,15 +40,19 @@ export class Game {
         };
 
         window.requestAnimationFrame(tick);
+    };
+
+    notifyGameOver(value: number) {
+        alert(`GAME OVER.\nYou score is: ${value}`);
     }
 
-    private gameOver() {
+    private gameOver = () => {
         this.isGameOver = true;
-    }
+    };
 
-    private startGame() {
+    private startGame = () => {
         this.isGameOver = false;
-    }
+    };
 
     private handleKeypres = ({ keyCode }) => {
         const keyMapToActions = {
@@ -66,27 +72,37 @@ export class Game {
     }
 
     private drawShape(color?: string) {
-        this.shape.forEachNonEmptyCell(({ x, y }) => {
-            this.ctx.drawSquare(
-                x + this.shapeOffsetX,
-                y + this.shapeOffsetY,
-                color || this.shape.color,
-            );
-        });
+        for (let y = 0; y < this.shape.activeShape.length; y++) {
+            for (let x = 0; x < this.shape.activeShape[y].length; x++) {
+                if (this.shape.activeShape[y][x]) {
+                    this.ctx.drawSquare(
+                        x + this.shapeOffsetX,
+                        y + this.shapeOffsetY,
+                        color || this.shape.color,
+                    );
+                }
+            }
+        }
     }
 
     private fillGrid() {
-        this.shape.forEachNonEmptyCell(({ x, y }) => {
-            if (this.shapeOffsetY + y < 0) {
-                this.gameOver();
+        for (let y = 0; y < this.shape.activeShape.length; y++) {
+            for (let x = 0; x < this.shape.activeShape[y].length; x++) {
+                if (this.shape.activeShape[y][x]) {
+                    if (this.shapeOffsetY + y < 0) {
+                        this.gameOver();
+                        this.score.notify(this.notifyGameOver);
+                        return;
+                    }
 
-                alert('GAME OVER');
-
-                return;
+                    this.grid.setCellColor(
+                        this.shapeOffsetX + x,
+                        this.shapeOffsetY + y,
+                        this.shape.color,
+                    );
+                }
             }
-
-            this.grid.setCellColor(this.shapeOffsetX + x, this.shapeOffsetY + y, this.shape.color);
-        });
+        }
     }
 
     private moveShapeDown = () => {
@@ -104,11 +120,10 @@ export class Game {
             this.fillGrid();
 
             if (!this.isGameOver) {
-                this.grid.removeFulfilledLines();
+                this.score.listen(this.grid.removeFulfilledLines());
                 this.drawGrid();
                 this.shape = new Shape();
-                this.shapeOffsetX = this.ctx.colSize / 2 - 2;
-                this.shapeOffsetY = -3;
+                this.setinitialShapeOffsets();
             }
         }
     };
@@ -145,7 +160,7 @@ export class Game {
         let nextX = this.shapeOffsetX;
 
         if (this.grid.checkCollision(nextX, this.shapeOffsetX, this.shape.getNextShape())) {
-            if (this.shapeOffsetX > this.ctx.colSize / 2) {
+            if (this.shapeOffsetX > this.grid.colSize / 2) {
                 nextX -= 1;
             } else {
                 nextX += 1;
